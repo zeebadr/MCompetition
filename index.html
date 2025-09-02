@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Quiz Challenge</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background-color: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 800px;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(to right, #3a7bd5, #00d2ff);
+            color: white;
+            padding: 25px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .quiz-info {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 0.9rem;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 10px;
+            border-radius: 15px;
+        }
+        
+        .quiz-container {
+            padding: 30px;
+        }
+        
+        .progress-bar {
+            height: 10px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+        
+        .progress {
+            height: 100%;
+            background: linear-gradient(to right, #ff8a00, #da1b60);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        
+        .question-number {
+            font-size: 1.2rem;
+            color: #3a7bd5;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .question {
+            font-size: 1.4rem;
+            margin-bottom: 25px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .option {
+            padding: 15px;
+            background-color: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .option:hover {
+            background-color: #e9ecef;
+            transform: translateY(-2px);
+        }
+        
+        .option.selected {
+            background-color: #3a7bd5;
+            color: white;
+            border-color: #3a7bd5;
+        }
+        
+        .option.correct {
+            background-color: #4caf50;
+            color: white;
+            border-color: #4caf50;
+        }
+        
+        .option.incorrect {
+            background-color: #f44336;
+            color: white;
+            border-color: #f44336;
+        }
+        
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-next {
+            background: linear-gradient(to right, #3a7bd5, #00d2ff);
+            color: white;
+        }
+        
+        .btn-next:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-next:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .result-container {
+            text-align: center;
+            padding: 40px;
+            display: none;
+        }
+        
+        .score {
+            font-size: 5rem;
+            font-weight: 700;
+            color: #3a7bd5;
+            margin: 20px 0;
+        }
+        
+        .message {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .emoji {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+        
+        .btn-restart {
+            background: linear-gradient(to right, #ff8a00, #da1b60);
+            color: white;
+            margin-top: 20px;
+        }
+        
+        .btn-restart:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .instructions {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .instructions h3 {
+            margin-bottom: 10px;
+            color: #3a7bd5;
+        }
+        
+        .already-completed {
+            text-align: center;
+            padding: 40px;
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .options {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .question {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Mcompetition</h1>
+            <p>Test your knowledge with our daily updated quiz!</p>
+            <div class="quiz-info" id="quiz-info">Daily Challenge</div>
+        </div>
+        
+        <div class="quiz-container" id="quiz-container">
+            <div class="progress-bar">
+                <div class="progress" id="progress"></div>
+            </div>
+            
+            <div class="question-number" id="question-number">Question 1 of 10</div>
+            <div class="question" id="question"></div>
+            
+            <div class="options" id="options">
+                <!-- Options will be inserted by JavaScript -->
+            </div>
+            
+            <div class="navigation">
+                <div></div> <!-- Empty div for spacing -->
+                <button class="btn btn-next" id="next-btn">Next Question</button>
+            </div>
+            
+        </div>
+        
+        <div class="result-container" id="result-container">
+            <div class="emoji" id="emoji">🎉</div>
+            <div class="score" id="score">0/10</div>
+            <div class="message" id="message">Well done!</div>
+            <p>Thank you for participating in today's quiz competition!</p>
+            <button class="btn btn-restart" id="restart-btn">Try Again Tomorrow</button>
+        </div>
+        
+        <div class="already-completed" id="already-completed">
+            <div class="emoji">⏰</div>
+            <div class="message">You've already completed today's quiz!</div>
+            <p>Come back tomorrow for a new challenge.</p>
+            <div class="score" id="previous-score">Previous Score: 0/10</div>
+            <button class="btn btn-restart" id="view-results-btn">View Your Results</button>
+        </div>
+    </div>
+
+    <script>
+        // =====================
+        // QUIZ DATA - EDIT HERE
+        // =====================
+        const questions = [
+            {
+                question: "من هو ابو الانبياء  ؟",
+                options: {
+                    a: "سيدنا ادم",
+                    b: "سيدنا نوح",
+                    c: "سيدنا ابراهيم",
+                    d: "سيدنا محمد"
+                },
+                correctAnswer: "c"
+            },
+            {
+                question: "ما هى اكبر بحيرة فى العالم؟",
+                options: {
+                    a: "بحيرة فيكتوريا",
+                    b: "بحر قزوين",
+                    c: "بحيرة قارون",
+                    d: "بحيرة ناصر"
+                },
+                correctAnswer: "b"
+            },
+            {
+                question: "حيوان من الحيوانات ينام دون أن يقفل عينه؟",
+                options: {
+                    a: "السمك",
+                    b: " الخفاش",
+                    c: "البومة",
+                    d: "النملة"
+                },
+                correctAnswer: "a"
+            },
+            {
+                question: "ماهو الحيوان الذى لا يملك صوتا?",
+                options: {
+                    a: "السمكة",
+                    b: "الزرافة",
+                    c: "النملة",
+                    d: "التمساح"
+                },
+                correctAnswer: "b"
+            },
+            {
+                question: "اين اقيم كاس العالم 2006",
+                options: {
+                    a: "اليابان",
+                    b: "فرنسا",
+                    c: "المانيا",
+                    d: "اسبانيا"
+                },
+                correctAnswer: "c"
+            },
+            {
+                question: "من اول مخترع للسيارة ذاتية الحركة ",
+                options: {
+                    a: "جيان جوزيف إتيان لينوار",
+                    b: "نيكولاس أوتو",
+                    c: "كارل بنز",
+                    d: "نيكولاس جوزيف كونيو"
+                },
+                correctAnswer: "c"
+            },
+            {
+                question: "ما هي أكثر دولة في العالم تحتوي على بحيرات طبيعية؟ ",
+                options: {
+                    a: "مصر",
+                    b: "امريكا",
+                    c: "كندا",
+                    d: "الصين"
+                },
+                correctAnswer: "c"
+            },
+            {
+                question: "ما هو عدد العضلات التي يستخدمها الإنسان عند التكلم؟",
+                options: {
+                    a: "41",
+                    b: "42",
+                    c: "43",
+                    d: "44"
+                },
+                correctAnswer: "d"
+            },
+            {
+                question: "ما هو الحيوان الذى يملك 4 ركب",
+                options: {
+                    a: "الفيل",
+                    b: "الزرافة",
+                    c: "الاسد",
+                    d: "الفهد"
+                },
+                correctAnswer: "a"
+            },
+            {
+                question: "ما هى اول صلاة صلاها الرسول",
+                options: {
+                    a: "الظهر",
+                    b: "العصر",
+                    c: "المغرب",
+                    d: "العشاء"
+                },
+                correctAnswer: "a"
+            }
+        ];
+        
+        // DOM Elements
+        const questionNumberEl = document.getElementById('question-number');
+        const questionEl = document.getElementById('question');
+        const optionsEl = document.getElementById('options');
+        const nextBtn = document.getElementById('next-btn');
+        const progressEl = document.getElementById('progress');
+        const resultContainerEl = document.getElementById('result-container');
+        const scoreEl = document.getElementById('score');
+        const messageEl = document.getElementById('message');
+        const emojiEl = document.getElementById('emoji');
+        const restartBtn = document.getElementById('restart-btn');
+        const quizContainerEl = document.getElementById('quiz-container');
+        const alreadyCompletedEl = document.getElementById('already-completed');
+        const previousScoreEl = document.getElementById('previous-score');
+        const viewResultsBtn = document.getElementById('view-results-btn');
+        const quizInfoEl = document.getElementById('quiz-info');
+        
+        // Quiz state
+        let currentQuestion = 0;
+        let score = 0;
+        let userAnswers = Array(questions.length).fill(null);
+        let quizCompleted = false;
+        
+        // Initialize the quiz
+        function initQuiz() {
+            // Check if user has already completed the quiz today
+            const lastCompletionDate = localStorage.getItem('quizCompletionDate');
+            const today = new Date().toDateString();
+            
+            if (lastCompletionDate === today) {
+                // User has already completed the quiz today
+                quizCompleted = true;
+                const previousScore = localStorage.getItem('quizScore') || 0;
+                previousScoreEl.textContent = `Previous Score: ${previousScore}/${questions.length}`;
+                quizContainerEl.style.display = 'none';
+                resultContainerEl.style.display = 'none';
+                alreadyCompletedEl.style.display = 'block';
+            } else {
+                // User hasn't completed the quiz today
+                loadQuestion();
+            }
+        }
+        
+        // Load question
+        function loadQuestion() {
+            const question = questions[currentQuestion];
+            questionNumberEl.textContent = `Question ${currentQuestion + 1} of ${questions.length}`;
+            questionEl.textContent = question.question;
+            
+            // Update progress bar
+            progressEl.style.width = `${((currentQuestion) / questions.length) * 100}%`;
+            
+            // Clear previous options
+            optionsEl.innerHTML = '';
+            
+            // Add options
+            for (const [key, value] of Object.entries(question.options)) {
+                const option = document.createElement('div');
+                option.className = `option ${userAnswers[currentQuestion] === key ? 'selected' : ''}`;
+                option.textContent = value;
+                option.dataset.key = key;
+                option.addEventListener('click', selectOption);
+                optionsEl.appendChild(option);
+            }
+            
+            // Update next button text
+            nextBtn.textContent = currentQuestion === questions.length - 1 ? 'Finish Quiz' : 'Next Question';
+            nextBtn.disabled = userAnswers[currentQuestion] === null;
+        }
+        
+        // Select option
+        function selectOption(e) {
+            const selectedOption = e.target.dataset.key;
+            userAnswers[currentQuestion] = selectedOption;
+            
+            // Update UI to show selected option
+            document.querySelectorAll('.option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            e.target.classList.add('selected');
+            
+            // Enable next button
+            nextBtn.disabled = false;
+        }
+        
+        // Next button click
+        nextBtn.addEventListener('click', () => {
+            // Check if answer is correct
+            if (userAnswers[currentQuestion] === questions[currentQuestion].correctAnswer) {
+                score++;
+            }
+            
+            // Move to next question or show results
+            if (currentQuestion < questions.length - 1) {
+                currentQuestion++;
+                loadQuestion();
+            } else {
+                // Mark quiz as completed in localStorage with today's date
+                const today = new Date().toDateString();
+                localStorage.setItem('quizCompletionDate', today);
+                localStorage.setItem('quizScore', score);
+                
+                showResults();
+                displayScore();
+            }
+        });
+        
+        // Show results
+        function showResults() {
+            quizContainerEl.style.display = 'none';
+            resultContainerEl.style.display = 'block';
+        }
+        
+        // Display score and message
+        function displayScore() {
+            scoreEl.textContent = `${score}/${questions.length}`;
+            
+            if (score <= 3) {
+                emojiEl.textContent = '😢';
+                messageEl.textContent = 'Keep practicing!';
+            } else if (score <= 5) {
+                emojiEl.textContent = '😐';
+                messageEl.textContent = 'Good effort!';
+            } else if (score <= 7) {
+                emojiEl.textContent = '🙂';
+                messageEl.textContent = 'Well done!';
+            } else if (score <= 9) {
+                emojiEl.textContent = '😊';
+                messageEl.textContent = 'Excellent!';
+            } else {
+                emojiEl.textContent = '🎉';
+                messageEl.textContent = 'Perfect Score!';
+            }
+        }
+        
+        // Restart button (for tomorrow's quiz)
+        restartBtn.addEventListener('click', () => {
+            alert("Come back tomorrow for a new quiz! For now, you can only take the quiz once per day.");
+        });
+        
+        // View results button
+        viewResultsBtn.addEventListener('click', () => {
+            const previousScore = localStorage.getItem('quizScore') || 0;
+            scoreEl.textContent = `${previousScore}/${questions.length}`;
+            
+            // Set message based on score
+            if (previousScore <= 3) {
+                emojiEl.textContent = '😢';
+                messageEl.textContent = 'Keep practicing!';
+            } else if (previousScore <= 5) {
+                emojiEl.textContent = '😐';
+                messageEl.textContent = 'Good effort!';
+            } else if (previousScore <= 7) {
+                emojiEl.textContent = '🙂';
+                messageEl.textContent = 'Well done!';
+            } else if (previousScore <= 9) {
+                emojiEl.textContent = '😊';
+                messageEl.textContent = 'Excellent!';
+            } else {
+                emojiEl.textContent = '🎉';
+                messageEl.textContent = 'Perfect Score!';
+            }
+            
+            alreadyCompletedEl.style.display = 'none';
+            resultContainerEl.style.display = 'block';
+        });
+        
+        // Initialize the quiz when the page loads
+        document.addEventListener('DOMContentLoaded', initQuiz);
+    </script>
+</body>
+</html>
