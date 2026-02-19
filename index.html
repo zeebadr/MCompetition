@@ -243,13 +243,14 @@
             <div class="quiz-info" id="quiz-info">Daily Challenge</div>
         </div>
         
+        <!-- Quiz Container - Visible by default -->
         <div class="quiz-container" id="quiz-container">
             <div class="progress-bar">
                 <div class="progress" id="progress"></div>
             </div>
             
             <div class="question-number" id="question-number">Question 1 of 10</div>
-            <div class="question" id="question"></div>
+            <div class="question" id="question">Loading questions...</div>
             
             <div class="options" id="options">
                 <!-- Options will be inserted by JavaScript -->
@@ -257,19 +258,20 @@
             
             <div class="navigation">
                 <div></div> <!-- Empty div for spacing -->
-                <button class="btn btn-next" id="next-btn">Next Question</button>
+                <button class="btn btn-next" id="next-btn" disabled>Next Question</button>
             </div>
-            
         </div>
         
+        <!-- Results Container - Hidden by default -->
         <div class="result-container" id="result-container">
             <div class="emoji" id="emoji">🎉</div>
             <div class="score" id="score">0/10</div>
             <div class="message" id="message">Well done!</div>
             <p>Thank you for participating in today's quiz competition!</p>
-            <button class="btn btn-restart" id="restart-btn">Try Again Tomorrow</button>
+            <button class="btn btn-restart" id="restart-btn">Take Quiz Again</button>
         </div>
         
+        <!-- Already Completed Container - Hidden by default -->
         <div class="already-completed" id="already-completed">
             <div class="emoji">⏰</div>
             <div class="message">You've already completed today's quiz!</div>
@@ -315,7 +317,7 @@
                 correctAnswer: "d"
             },
             {
-                question: " قال تعالى في سورة المدثر: (والرجز فاهجر (5)) ما المقصود بالرجز؟",
+                question: "قال تعالى في سورة المدثر: (والرجز فاهجر (5)) ما المقصود بالرجز؟",
                 options: {
                     a: "الكذب",
                     b: "الاوثان",
@@ -335,17 +337,17 @@
                 correctAnswer: "c"
             },
             {
-                question: "من هو أول من وضع النقاط على الحروف؟ ",
+                question: "من هو أول من وضع النقاط على الحروف؟",
                 options: {
                     a: "الخليل بن أحمد الفراهيدي",
-                    b: " الحجاج بن يوسف الثقفي",
-                    c: " نصر بن عاصم الليثي ",
-                    d: "أبو الأسود الدؤلي "
+                    b: "الحجاج بن يوسف الثقفي",
+                    c: "نصر بن عاصم الليثي",
+                    d: "أبو الأسود الدؤلي"
                 },
                 correctAnswer: "c"
             },
             {
-                question: "كم عدد السور التي ابتدأت بالحروف المقطعة (الم) ؟ ",
+                question: "كم عدد السور التي ابتدأت بالحروف المقطعة (الم)؟",
                 options: {
                     a: "4",
                     b: "5",
@@ -375,7 +377,7 @@
                 correctAnswer: "a"
             },
             {
-                question: " من هو النبي الذي لقب بـ "خليل الله"؟",
+                question: "من هو النبي الذي لقب بـ 'خليل الله'؟",
                 options: {
                     a: "ابراهيم",
                     b: "موسى",
@@ -393,11 +395,11 @@
         const nextBtn = document.getElementById('next-btn');
         const progressEl = document.getElementById('progress');
         const resultContainerEl = document.getElementById('result-container');
+        const quizContainerEl = document.getElementById('quiz-container');
         const scoreEl = document.getElementById('score');
         const messageEl = document.getElementById('message');
         const emojiEl = document.getElementById('emoji');
         const restartBtn = document.getElementById('restart-btn');
-        const quizContainerEl = document.getElementById('quiz-container');
         const alreadyCompletedEl = document.getElementById('already-completed');
         const previousScoreEl = document.getElementById('previous-score');
         const viewResultsBtn = document.getElementById('view-results-btn');
@@ -407,24 +409,37 @@
         let currentQuestion = 0;
         let score = 0;
         let userAnswers = Array(questions.length).fill(null);
-        let quizCompleted = false;
         
         // Initialize the quiz
         function initQuiz() {
+            // Clear any old localStorage data for testing
+            // Comment this line out when deploying to production
+            // localStorage.clear();
+            
             // Check if user has already completed the quiz today
             const lastCompletionDate = localStorage.getItem('quizCompletionDate');
             const today = new Date().toDateString();
             
-            if (lastCompletionDate === today) {
+            // For testing: Add ?test to URL to bypass daily restriction
+            const urlParams = new URLSearchParams(window.location.search);
+            const isTestMode = urlParams.has('test');
+            
+            if (!isTestMode && lastCompletionDate === today) {
                 // User has already completed the quiz today
-                quizCompleted = true;
                 const previousScore = localStorage.getItem('quizScore') || 0;
                 previousScoreEl.textContent = `Previous Score: ${previousScore}/${questions.length}`;
+                
+                // Show already completed screen
                 quizContainerEl.style.display = 'none';
                 resultContainerEl.style.display = 'none';
                 alreadyCompletedEl.style.display = 'block';
             } else {
-                // User hasn't completed the quiz today
+                // Show quiz
+                quizContainerEl.style.display = 'block';
+                resultContainerEl.style.display = 'none';
+                alreadyCompletedEl.style.display = 'none';
+                
+                // Load first question
                 loadQuestion();
             }
         }
@@ -436,23 +451,29 @@
             questionEl.textContent = question.question;
             
             // Update progress bar
-            progressEl.style.width = `${((currentQuestion) / questions.length) * 100}%`;
+            const progressPercentage = (currentQuestion / questions.length) * 100;
+            progressEl.style.width = `${progressPercentage}%`;
             
             // Clear previous options
             optionsEl.innerHTML = '';
             
             // Add options
-            for (const [key, value] of Object.entries(question.options)) {
-                const option = document.createElement('div');
-                option.className = `option ${userAnswers[currentQuestion] === key ? 'selected' : ''}`;
-                option.textContent = value;
-                option.dataset.key = key;
-                option.addEventListener('click', selectOption);
-                optionsEl.appendChild(option);
-            }
+            const optionLetters = ['a', 'b', 'c', 'd'];
+            optionLetters.forEach(letter => {
+                if (question.options[letter]) {
+                    const option = document.createElement('div');
+                    option.className = `option ${userAnswers[currentQuestion] === letter ? 'selected' : ''}`;
+                    option.textContent = question.options[letter];
+                    option.dataset.key = letter;
+                    option.addEventListener('click', selectOption);
+                    optionsEl.appendChild(option);
+                }
+            });
             
             // Update next button text
             nextBtn.textContent = currentQuestion === questions.length - 1 ? 'Finish Quiz' : 'Next Question';
+            
+            // Enable/disable next button based on whether an answer is selected
             nextBtn.disabled = userAnswers[currentQuestion] === null;
         }
         
@@ -473,7 +494,7 @@
         
         // Next button click
         nextBtn.addEventListener('click', () => {
-            // Check if answer is correct
+            // Check if answer is correct for the CURRENT question
             if (userAnswers[currentQuestion] === questions[currentQuestion].correctAnswer) {
                 score++;
             }
@@ -483,26 +504,26 @@
                 currentQuestion++;
                 loadQuestion();
             } else {
-                // Mark quiz as completed in localStorage with today's date
+                // Quiz completed - save to localStorage
                 const today = new Date().toDateString();
                 localStorage.setItem('quizCompletionDate', today);
                 localStorage.setItem('quizScore', score);
                 
+                // Show results
                 showResults();
-                displayScore();
             }
         });
         
         // Show results
         function showResults() {
+            // Hide quiz, show results
             quizContainerEl.style.display = 'none';
             resultContainerEl.style.display = 'block';
-        }
-        
-        // Display score and message
-        function displayScore() {
+            
+            // Display score
             scoreEl.textContent = `${score}/${questions.length}`;
             
+            // Set message and emoji based on score
             if (score <= 3) {
                 emojiEl.textContent = '😢';
                 messageEl.textContent = 'Keep practicing!';
@@ -521,14 +542,30 @@
             }
         }
         
-        // Restart button (for tomorrow's quiz)
+        // Restart button - reset quiz
         restartBtn.addEventListener('click', () => {
-            alert("Come back tomorrow for a new quiz! For now, you can only take the quiz once per day.");
+            // Reset quiz state
+            currentQuestion = 0;
+            score = 0;
+            userAnswers = Array(questions.length).fill(null);
+            
+            // Show quiz container
+            quizContainerEl.style.display = 'block';
+            resultContainerEl.style.display = 'none';
+            
+            // Load first question
+            loadQuestion();
         });
         
         // View results button
         viewResultsBtn.addEventListener('click', () => {
             const previousScore = localStorage.getItem('quizScore') || 0;
+            
+            // Show results with previous score
+            alreadyCompletedEl.style.display = 'none';
+            resultContainerEl.style.display = 'block';
+            
+            // Display previous score
             scoreEl.textContent = `${previousScore}/${questions.length}`;
             
             // Set message based on score
@@ -548,16 +585,10 @@
                 emojiEl.textContent = '🎉';
                 messageEl.textContent = 'Perfect Score!';
             }
-            
-            alreadyCompletedEl.style.display = 'none';
-            resultContainerEl.style.display = 'block';
         });
         
-        // Initialize the quiz when the page loads
+        // Start the quiz when page loads
         document.addEventListener('DOMContentLoaded', initQuiz);
     </script>
 </body>
-
 </html>
-
-
