@@ -61,6 +61,7 @@
         
         .quiz-container {
             padding: 30px;
+            display: block;
         }
         
         .progress-bar {
@@ -120,18 +121,6 @@
             border-color: #3a7bd5;
         }
         
-        .option.correct {
-            background-color: #4caf50;
-            color: white;
-            border-color: #4caf50;
-        }
-        
-        .option.incorrect {
-            background-color: #f44336;
-            color: white;
-            border-color: #f44336;
-        }
-        
         .navigation {
             display: flex;
             justify-content: space-between;
@@ -165,10 +154,10 @@
             box-shadow: none;
         }
         
-        .result-container {
+        .result-container, .already-completed {
+            display: none;
             text-align: center;
             padding: 40px;
-            display: none;
         }
         
         .score {
@@ -200,26 +189,6 @@
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
         
-        .instructions {
-            background-color: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-            margin-top: 20px;
-            font-size: 0.9rem;
-            color: #666;
-        }
-        
-        .instructions h3 {
-            margin-bottom: 10px;
-            color: #3a7bd5;
-        }
-        
-        .already-completed {
-            text-align: center;
-            padding: 40px;
-            display: none;
-        }
-        
         @media (max-width: 768px) {
             .options {
                 grid-template-columns: 1fr;
@@ -243,26 +212,24 @@
             <div class="quiz-info" id="quiz-info">Daily Challenge</div>
         </div>
         
-        <!-- Quiz Container - Visible by default -->
+        <!-- Quiz Container -->
         <div class="quiz-container" id="quiz-container">
             <div class="progress-bar">
-                <div class="progress" id="progress"></div>
+                <div class="progress" id="progress" style="width: 0%;"></div>
             </div>
             
             <div class="question-number" id="question-number">Question 1 of 10</div>
-            <div class="question" id="question">Loading questions...</div>
+            <div class="question" id="question"></div>
             
-            <div class="options" id="options">
-                <!-- Options will be inserted by JavaScript -->
-            </div>
+            <div class="options" id="options"></div>
             
             <div class="navigation">
-                <div></div> <!-- Empty div for spacing -->
+                <div></div>
                 <button class="btn btn-next" id="next-btn" disabled>Next Question</button>
             </div>
         </div>
         
-        <!-- Results Container - Hidden by default -->
+        <!-- Results Container -->
         <div class="result-container" id="result-container">
             <div class="emoji" id="emoji">🎉</div>
             <div class="score" id="score">0/10</div>
@@ -271,7 +238,7 @@
             <button class="btn btn-restart" id="restart-btn">Take Quiz Again</button>
         </div>
         
-        <!-- Already Completed Container - Hidden by default -->
+        <!-- Already Completed Container -->
         <div class="already-completed" id="already-completed">
             <div class="emoji">⏰</div>
             <div class="message">You've already completed today's quiz!</div>
@@ -283,7 +250,7 @@
 
     <script>
         // =====================
-        // QUIZ DATA - EDIT HERE
+        // QUIZ DATA
         // =====================
         const questions = [
             {
@@ -387,207 +354,198 @@
                 correctAnswer: "a"
             }
         ];
-        
-        // DOM Elements
+
+        // Get DOM elements
         const questionNumberEl = document.getElementById('question-number');
         const questionEl = document.getElementById('question');
         const optionsEl = document.getElementById('options');
         const nextBtn = document.getElementById('next-btn');
         const progressEl = document.getElementById('progress');
-        const resultContainerEl = document.getElementById('result-container');
-        const quizContainerEl = document.getElementById('quiz-container');
+        const quizContainer = document.getElementById('quiz-container');
+        const resultContainer = document.getElementById('result-container');
+        const alreadyCompleted = document.getElementById('already-completed');
         const scoreEl = document.getElementById('score');
         const messageEl = document.getElementById('message');
         const emojiEl = document.getElementById('emoji');
         const restartBtn = document.getElementById('restart-btn');
-        const alreadyCompletedEl = document.getElementById('already-completed');
-        const previousScoreEl = document.getElementById('previous-score');
         const viewResultsBtn = document.getElementById('view-results-btn');
-        const quizInfoEl = document.getElementById('quiz-info');
-        
+        const previousScoreEl = document.getElementById('previous-score');
+
         // Quiz state
-        let currentQuestion = 0;
+        let currentQuestionIndex = 0;
         let score = 0;
-        let userAnswers = Array(questions.length).fill(null);
-        
+        let userAnswers = new Array(questions.length).fill(null);
+        let quizCompleted = false;
+
         // Initialize the quiz
         function initQuiz() {
-            // Clear any old localStorage data for testing
-            // Comment this line out when deploying to production
+            // Clear localStorage for testing (remove this in production)
             // localStorage.clear();
             
-            // Check if user has already completed the quiz today
-            const lastCompletionDate = localStorage.getItem('quizCompletionDate');
+            // Check if user already completed quiz today
+            const lastCompletion = localStorage.getItem('quizCompletionDate');
             const today = new Date().toDateString();
             
-            // For testing: Add ?test to URL to bypass daily restriction
+            // Add test parameter to bypass daily limit
             const urlParams = new URLSearchParams(window.location.search);
-            const isTestMode = urlParams.has('test');
+            const testMode = urlParams.has('test');
             
-            if (!isTestMode && lastCompletionDate === today) {
-                // User has already completed the quiz today
-                const previousScore = localStorage.getItem('quizScore') || 0;
-                previousScoreEl.textContent = `Previous Score: ${previousScore}/${questions.length}`;
-                
+            if (!testMode && lastCompletion === today) {
                 // Show already completed screen
-                quizContainerEl.style.display = 'none';
-                resultContainerEl.style.display = 'none';
-                alreadyCompletedEl.style.display = 'block';
+                showAlreadyCompleted();
             } else {
                 // Show quiz
-                quizContainerEl.style.display = 'block';
-                resultContainerEl.style.display = 'none';
-                alreadyCompletedEl.style.display = 'none';
-                
-                // Load first question
-                loadQuestion();
+                showQuiz();
             }
         }
-        
-        // Load question
+
+        function showQuiz() {
+            quizContainer.style.display = 'block';
+            resultContainer.style.display = 'none';
+            alreadyCompleted.style.display = 'none';
+            loadQuestion();
+        }
+
+        function showAlreadyCompleted() {
+            const savedScore = localStorage.getItem('quizScore') || 0;
+            previousScoreEl.textContent = `Previous Score: ${savedScore}/${questions.length}`;
+            
+            quizContainer.style.display = 'none';
+            resultContainer.style.display = 'none';
+            alreadyCompleted.style.display = 'block';
+        }
+
         function loadQuestion() {
-            const question = questions[currentQuestion];
-            questionNumberEl.textContent = `Question ${currentQuestion + 1} of ${questions.length}`;
+            const question = questions[currentQuestionIndex];
+            
+            // Update question number and text
+            questionNumberEl.textContent = `Question ${currentQuestionIndex + 1} of ${questions.length}`;
             questionEl.textContent = question.question;
             
-            // Update progress bar
-            const progressPercentage = (currentQuestion / questions.length) * 100;
-            progressEl.style.width = `${progressPercentage}%`;
+            // Update progress
+            const progress = (currentQuestionIndex / questions.length) * 100;
+            progressEl.style.width = progress + '%';
             
-            // Clear previous options
+            // Clear and rebuild options
             optionsEl.innerHTML = '';
             
-            // Add options
-            const optionLetters = ['a', 'b', 'c', 'd'];
-            optionLetters.forEach(letter => {
-                if (question.options[letter]) {
-                    const option = document.createElement('div');
-                    option.className = `option ${userAnswers[currentQuestion] === letter ? 'selected' : ''}`;
-                    option.textContent = question.options[letter];
-                    option.dataset.key = letter;
-                    option.addEventListener('click', selectOption);
-                    optionsEl.appendChild(option);
+            // Create option elements
+            const optionEntries = Object.entries(question.options);
+            optionEntries.forEach(([key, value]) => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'option';
+                if (userAnswers[currentQuestionIndex] === key) {
+                    optionDiv.classList.add('selected');
                 }
+                optionDiv.textContent = value;
+                optionDiv.dataset.key = key;
+                optionDiv.addEventListener('click', selectOption);
+                optionsEl.appendChild(optionDiv);
             });
             
-            // Update next button text
-            nextBtn.textContent = currentQuestion === questions.length - 1 ? 'Finish Quiz' : 'Next Question';
-            
-            // Enable/disable next button based on whether an answer is selected
-            nextBtn.disabled = userAnswers[currentQuestion] === null;
+            // Update next button
+            nextBtn.textContent = currentQuestionIndex === questions.length - 1 ? 'Finish Quiz' : 'Next Question';
+            nextBtn.disabled = userAnswers[currentQuestionIndex] === null;
         }
-        
-        // Select option
+
         function selectOption(e) {
-            const selectedOption = e.target.dataset.key;
-            userAnswers[currentQuestion] = selectedOption;
-            
-            // Update UI to show selected option
+            // Remove selected class from all options
             document.querySelectorAll('.option').forEach(opt => {
                 opt.classList.remove('selected');
             });
+            
+            // Add selected class to clicked option
             e.target.classList.add('selected');
+            
+            // Save answer
+            userAnswers[currentQuestionIndex] = e.target.dataset.key;
             
             // Enable next button
             nextBtn.disabled = false;
         }
-        
-        // Next button click
-        nextBtn.addEventListener('click', () => {
-            // Check if answer is correct for the CURRENT question
-            if (userAnswers[currentQuestion] === questions[currentQuestion].correctAnswer) {
-                score++;
-            }
-            
-            // Move to next question or show results
-            if (currentQuestion < questions.length - 1) {
-                currentQuestion++;
-                loadQuestion();
-            } else {
-                // Quiz completed - save to localStorage
-                const today = new Date().toDateString();
-                localStorage.setItem('quizCompletionDate', today);
-                localStorage.setItem('quizScore', score);
-                
-                // Show results
-                showResults();
-            }
-        });
-        
-        // Show results
+
         function showResults() {
             // Hide quiz, show results
-            quizContainerEl.style.display = 'none';
-            resultContainerEl.style.display = 'block';
+            quizContainer.style.display = 'none';
+            resultContainer.style.display = 'block';
             
             // Display score
             scoreEl.textContent = `${score}/${questions.length}`;
             
-            // Set message and emoji based on score
-            if (score <= 3) {
-                emojiEl.textContent = '😢';
-                messageEl.textContent = 'Keep practicing!';
-            } else if (score <= 5) {
-                emojiEl.textContent = '😐';
-                messageEl.textContent = 'Good effort!';
-            } else if (score <= 7) {
-                emojiEl.textContent = '🙂';
-                messageEl.textContent = 'Well done!';
-            } else if (score <= 9) {
-                emojiEl.textContent = '😊';
-                messageEl.textContent = 'Excellent!';
-            } else {
-                emojiEl.textContent = '🎉';
-                messageEl.textContent = 'Perfect Score!';
-            }
-        }
-        
-        // Restart button - reset quiz
-        restartBtn.addEventListener('click', () => {
-            // Reset quiz state
-            currentQuestion = 0;
-            score = 0;
-            userAnswers = Array(questions.length).fill(null);
-            
-            // Show quiz container
-            quizContainerEl.style.display = 'block';
-            resultContainerEl.style.display = 'none';
-            
-            // Load first question
-            loadQuestion();
-        });
-        
-        // View results button
-        viewResultsBtn.addEventListener('click', () => {
-            const previousScore = localStorage.getItem('quizScore') || 0;
-            
-            // Show results with previous score
-            alreadyCompletedEl.style.display = 'none';
-            resultContainerEl.style.display = 'block';
-            
-            // Display previous score
-            scoreEl.textContent = `${previousScore}/${questions.length}`;
-            
             // Set message based on score
-            if (previousScore <= 3) {
-                emojiEl.textContent = '😢';
-                messageEl.textContent = 'Keep practicing!';
-            } else if (previousScore <= 5) {
-                emojiEl.textContent = '😐';
-                messageEl.textContent = 'Good effort!';
-            } else if (previousScore <= 7) {
-                emojiEl.textContent = '🙂';
-                messageEl.textContent = 'Well done!';
-            } else if (previousScore <= 9) {
-                emojiEl.textContent = '😊';
-                messageEl.textContent = 'Excellent!';
-            } else {
-                emojiEl.textContent = '🎉';
+            if (score === questions.length) {
+                emojiEl.textContent = '🏆';
                 messageEl.textContent = 'Perfect Score!';
+            } else if (score >= 7) {
+                emojiEl.textContent = '🎉';
+                messageEl.textContent = 'Great job!';
+            } else if (score >= 5) {
+                emojiEl.textContent = '👍';
+                messageEl.textContent = 'Good effort!';
+            } else {
+                emojiEl.textContent = '💪';
+                messageEl.textContent = 'Keep practicing!';
+            }
+            
+            // Save to localStorage
+            const today = new Date().toDateString();
+            localStorage.setItem('quizCompletionDate', today);
+            localStorage.setItem('quizScore', score);
+        }
+
+        // Event Listeners
+        nextBtn.addEventListener('click', () => {
+            // Check if answer is correct
+            if (userAnswers[currentQuestionIndex] === questions[currentQuestionIndex].correctAnswer) {
+                score++;
+            }
+            
+            // Move to next question or show results
+            if (currentQuestionIndex < questions.length - 1) {
+                currentQuestionIndex++;
+                loadQuestion();
+            } else {
+                showResults();
             }
         });
-        
-        // Start the quiz when page loads
+
+        restartBtn.addEventListener('click', () => {
+            // Reset quiz
+            currentQuestionIndex = 0;
+            score = 0;
+            userAnswers = new Array(questions.length).fill(null);
+            
+            // Show quiz
+            showQuiz();
+        });
+
+        viewResultsBtn.addEventListener('click', () => {
+            const savedScore = localStorage.getItem('quizScore') || 0;
+            
+            // Show results
+            alreadyCompleted.style.display = 'none';
+            resultContainer.style.display = 'block';
+            
+            // Display saved score
+            scoreEl.textContent = `${savedScore}/${questions.length}`;
+            
+            // Set message
+            if (savedScore == questions.length) {
+                emojiEl.textContent = '🏆';
+                messageEl.textContent = 'Perfect Score!';
+            } else if (savedScore >= 7) {
+                emojiEl.textContent = '🎉';
+                messageEl.textContent = 'Great job!';
+            } else if (savedScore >= 5) {
+                emojiEl.textContent = '👍';
+                messageEl.textContent = 'Good effort!';
+            } else {
+                emojiEl.textContent = '💪';
+                messageEl.textContent = 'Keep practicing!';
+            }
+        });
+
+        // Start the quiz
         document.addEventListener('DOMContentLoaded', initQuiz);
     </script>
 </body>
